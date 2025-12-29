@@ -106,13 +106,22 @@ function sigFigs(t){
 /* 항상 n.abcd × 10^m */
 function roundSig(v, s){
   if(!isFinite(v)) return '오류';
-  if(v === 0) return '0.0 × 10^0';
-  if(!isFinite(s)) s = 10;
+  if(v === 0) return '0.00 × 10^0';
 
-  const exp = v.toExponential(s - 1);
-  const [m, e] = exp.split('e');
-  return `${Number(m)} × 10^${Number(e)}`;
+if(!isFinite(s)){
+  const e = Math.floor(Math.log10(Math.abs(v||1)));
+  const m = (v / 10**e).toString();
+  return `${m} × 10^${e}`;
 }
+
+
+  const expStr = v.toExponential(s - 1); 
+  const [mant, exp] = expStr.split('e');
+
+  // mant는 문자열 그대로 유지 (중요!)
+  return `${mant} × 10^${Number(exp)}`;
+}
+
 
 /* 삼각함수 특수각 */
 function trig(func,val){
