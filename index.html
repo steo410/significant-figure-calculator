@@ -14,7 +14,6 @@ button.disabled{visibility:hidden}
 .screen{font-size:18px;min-height:40px;border:1px solid #aaa;padding:5px;margin-bottom:10px}
 .popup{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4)}
 .popup-content{background:#fff;padding:20px;margin:120px auto;width:260px;text-align:center}
-.cursor{color:#888}
 </style>
 </head>
 
@@ -73,7 +72,7 @@ button.disabled{visibility:hidden}
 <div class="screen" id="result"></div>
 <div class="screen" style="font-size:14px;line-height:1.5">
 <b>유효숫자 계산 규칙</b><br>
-• 덧셈·뺄셈: 소수점 자리 기준<br>
+• 덧셈·뺄셈: 소수점 자리 기준 (지수 정렬 후)<br>
 • 곱셈·나눗셈: 유효숫자 개수 기준<br>
 • π, e 등 정의된 수는 유효숫자에 영향 없음<br>
 • 반올림은 계산 마지막 단계에서 1회
@@ -92,7 +91,7 @@ button.disabled{visibility:hidden}
 </div>
 
 <script>
-let expr='', cursor=0;
+let expr='',cursor=0;
 
 /* ===== 위첨자 ===== */
 const sup={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
@@ -100,65 +99,51 @@ const rev=Object.fromEntries(Object.entries(sup).map(([k,v])=>[v,k]));
 const toSup=n=>String(n).split('').map(d=>sup[d]).join('');
 const fromSup=s=>s.split('').map(c=>rev[c]).join('');
 
-/* ===== 화면 출력 ===== */
-function render(){
-  document.getElementById('expr').innerHTML =
-    expr.slice(0,cursor) + '<span class="cursor">|</span>' + expr.slice(cursor);
-}
-
 /* ===== 입력 ===== */
-function input(v){
-  expr = expr.slice(0,cursor) + v + expr.slice(cursor);
-  cursor += v.length;
-  render();
+function render(){
+  document.getElementById('expr').innerText =
+    expr.slice(0,cursor)+'|'+expr.slice(cursor);
 }
-function inputOp(o){ input(` ${o} `); }
-function inputFunc(f){ f==='sqrt'?input('√('):input(f+'('); }
-function move(d){
-  cursor = Math.max(0, Math.min(expr.length, cursor + d));
-  render();
-}
-function backspace(){
-  if(cursor>0){
-    expr = expr.slice(0,cursor-1) + expr.slice(cursor);
-    cursor--;
-    render();
-  }
-}
-function clearAll(){
-  expr=''; cursor=0; render(); result.innerText='';
-}
-
-/* ===== 루트 ===== */
+function input(v){expr=expr.slice(0,cursor)+v+expr.slice(cursor);cursor+=v.length;render()}
+function inputOp(o){input(` ${o} `)}
+function inputFunc(f){f==='sqrt'?input('√('):input(f+'(')}
+function move(d){cursor=Math.max(0,Math.min(expr.length,cursor+d));render()}
+function backspace(){if(cursor>0){expr=expr.slice(0,cursor-1)+expr.slice(cursor);cursor--;render()}}
+function clearAll(){expr='';cursor=0;render();result.innerText=''}
 function openRootPopup(){rootPopup.style.display='block'}
 function closeRootPopup(){rootPopup.style.display='none'}
 function confirmRoot(){input(`${toSup(rootN.value)}√(`);closeRootPopup()}
 
-/* ===== 덧셈·뺄셈 ===== */
-function sciAddSub(v, dec){
- if(v===0) return '0.0×10^0';
- const e=Math.floor(Math.log10(Math.abs(v)));
- let m=v/10**e;
- m=Math.round((m+Number.EPSILON)*10**dec)/10**dec;
- return m.toFixed(dec)+'×10^'+e;
-}
-
 /* ===== 곱셈·나눗셈 ===== */
-function sciMulDiv(v, sig){
+function sciMulDiv(v,sig){
  if(v===0) return '0.0×10^0';
  const e=Math.floor(Math.log10(Math.abs(v)));
- const m=(v/10**e).toPrecision(sig);
- return m+'×10^'+e;
+ return Number(v/10**e).toPrecision(sig)+'×10^'+e;
 }
 
-/* ===== 계산 (원본 그대로) ===== */
+/* ===== 덧셈·뺄셈 (지수 정렬) ===== */
+function sciAddSubFixed(raw,terms){
+ if(raw===0) return '0.0×10^0';
+ const vals=terms.map(t=>Function(
+   'return '+t.replace(/π/g,'Math.PI')
+   .replace(/e/g,'Math.E')
+   .replace(/×/g,'*').replace(/\^/g,'**')
+ )());
+ const exps=vals.map(v=>Math.floor(Math.log10(Math.abs(v))));
+ const base=Math.max(...exps);
+ const shifted=vals.map(v=>v/10**base);
+ const decs=shifted.map(v=>{
+   const s=v.toString();return s.includes('.')?s.split('.')[1].length:0;
+ });
+ const minDec=Math.min(...decs);
+ return (raw/10**base).toFixed(minDec)+'×10^'+base;
+}
+
+/* ===== 계산 ===== */
 function calculate(){
  try{
   const nums=(expr.match(/\d+\.?\d*/g)||[]);
-  const decs=nums.map(n=>n.includes('.')?n.split('.')[1].length:0);
   const sigs=nums.map(n=>n.replace('.','').replace(/^0+/,'').length);
-
-  const minDec=Math.min(...decs);
   const minSig=Math.min(...sigs);
 
   let safe=expr
@@ -175,11 +160,10 @@ function calculate(){
    .replace(/−/g,'-');
 
   const raw=Function(`return ${safe}`)();
-
   const out =
-    expr.includes('+')||expr.includes('-')
-      ? sciAddSub(raw,minDec)
-      : sciMulDiv(raw,minSig);
+   expr.includes('+')||expr.includes('-')
+    ? sciAddSubFixed(raw,expr.split(/[\+\-]/))
+    : sciMulDiv(raw,minSig);
 
   result.innerText='= '+out;
  }catch{
