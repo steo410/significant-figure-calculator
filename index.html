@@ -1,176 +1,446 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>유효숫자 계산기</title>
 <style>
-body{font-family:Arial,sans-serif;padding:20px}
-.container{display:flex;gap:20px}
-.calc,.display{border:1px solid #ccc;padding:15px;width:380px}
-.buttons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-button{padding:10px;font-size:14px}
-button.disabled{visibility:hidden}
-.equal{grid-column:span 3;font-size:18px}
-.screen{font-size:18px;min-height:40px;border:1px solid #aaa;padding:5px;margin-bottom:10px}
-.popup{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4)}
-.popup-content{background:#fff;padding:20px;margin:120px auto;width:260px;text-align:center}
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --line: #d1d5db;
+    --primary: #0f766e;
+    --primary-2: #115e59;
+    --error: #b91c1c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 40%);
+    color: var(--text);
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 32px auto;
+    padding: 0 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  }
+  h1 { margin: 0 0 12px; font-size: 26px; }
+  p { margin: 0; color: var(--muted); line-height: 1.5; }
+  .input-row { margin-top: 16px; display: grid; gap: 10px; }
+  input {
+    width: 100%;
+    font-size: 17px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  button {
+    border: 0;
+    background: var(--primary);
+    color: #fff;
+    font-size: 15px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--primary-2); }
+  button.secondary {
+    background: #e5e7eb;
+    color: #111827;
+  }
+  .result {
+    margin-top: 16px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 12px;
+    background: #f9fafb;
+  }
+  .result strong { display: inline-block; min-width: 90px; }
+  .error { color: var(--error); font-weight: 600; }
+  ul { margin: 10px 0 0 18px; color: var(--muted); }
+  code { background: #eef2f7; padding: 1px 4px; border-radius: 4px; }
 </style>
 </head>
-
 <body>
-<h1>유효숫자 계산기</h1>
+  <div class="wrap">
+    <div class="card">
+      <h1>유효숫자 계산기</h1>
+      <p>
+        블로그 규칙을 반영했습니다. 중간 단계는 일반 계산 후,
+        최종 단계에서만 유효숫자/자릿수 반올림을 적용합니다.
+      </p>
 
-<div class="container">
-<div class="calc">
-<div class="buttons">
+      <div class="input-row">
+        <input id="expr" type="text" value="(3.022+1.50)*2601/4.7" />
+        <div class="actions">
+          <button id="calcBtn">계산하기</button>
+          <button class="secondary" id="sample1">예시1</button>
+          <button class="secondary" id="sample2">예시2</button>
+          <button class="secondary" id="sample3">예시3</button>
+        </div>
+      </div>
 
-<button onclick="clearAll()">C</button>
-<button onclick="backspace()">←</button>
-<button onclick="move(-1)">◀</button>
-<button onclick="move(1)">▶</button>
-<button onclick="input('(')">(</button>
-<button onclick="input(')')">)</button>
+      <div class="result" id="result">
+        <div><strong>일반 계산:</strong> -</div>
+        <div><strong>유효숫자 결과:</strong> -</div>
+        <div><strong>적용 규칙:</strong> -</div>
+      </div>
 
-<button onclick="inputFunc('sqrt')">√</button>
-<button onclick="openRootPopup()">ⁿ√</button>
-<button onclick="inputFunc('log')">log</button>
-<button onclick="inputFunc('sin')">sin</button>
-<button onclick="inputFunc('cos')">cos</button>
-<button onclick="inputFunc('tan')">tan</button>
-
-<button onclick="input('7')">7</button>
-<button onclick="input('8')">8</button>
-<button onclick="input('9')">9</button>
-<button onclick="input('1/(')">1/x</button>
-<button onclick="input('π')">π</button>
-<button onclick="input('e')">e</button>
-
-<button onclick="input('4')">4</button>
-<button onclick="input('5')">5</button>
-<button onclick="input('6')">6</button>
-<button onclick="inputOp('/')">÷</button>
-<button onclick="inputOp('*')">×</button>
-<button class="disabled"></button>
-
-<button onclick="input('1')">1</button>
-<button onclick="input('2')">2</button>
-<button onclick="input('3')">3</button>
-<button onclick="inputOp('+')">+</button>
-<button onclick="inputOp('-')">−</button>
-<button class="disabled"></button>
-
-<button onclick="input('^')">^</button>
-<button onclick="input('0')">0</button>
-<button onclick="input('.')">.</button>
-<button onclick="calculate()" class="equal">=</button>
-
-</div>
-</div>
-
-<div class="display">
-<div class="screen" id="expr"></div>
-<div class="screen" id="result"></div>
-<div class="screen" style="font-size:14px;line-height:1.5">
-<b>유효숫자 계산 규칙</b><br>
-• 덧셈·뺄셈: 소수점 자리 기준 (지수 정렬 후)<br>
-• 곱셈·나눗셈: 유효숫자 개수 기준<br>
-• π, e 등 정의된 수는 유효숫자에 영향 없음<br>
-• 반올림은 계산 마지막 단계에서 1회
-</div>
-</div>
-</div>
-
-<div class="popup" id="rootPopup">
-<div class="popup-content">
-<p>n 값 (정수)</p>
-<input type="number" id="rootN" min="2" value="2">
-<br><br>
-<button onclick="confirmRoot()">확인</button>
-<button onclick="closeRootPopup()">취소</button>
-</div>
-</div>
+      <ul>
+        <li>지원 연산: <code>+ - * / ( )</code></li>
+        <li>상수: <code>pi</code>, <code>e</code> (완전수로 간주, 제한 없음)</li>
+        <li>지수 표기: <code>1.20e3</code> 가능</li>
+        <li>반올림: 5는 짝수 쪽 반올림(half-even)</li>
+      </ul>
+    </div>
+  </div>
 
 <script>
-let expr='',cursor=0;
+(function () {
+  const exprEl = document.getElementById("expr");
+  const resultEl = document.getElementById("result");
 
-/* ===== 위첨자 ===== */
-const sup={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
-const rev=Object.fromEntries(Object.entries(sup).map(([k,v])=>[v,k]));
-const toSup=n=>String(n).split('').map(d=>sup[d]).join('');
-const fromSup=s=>s.split('').map(c=>rev[c]).join('');
+  function isDigit(ch) {
+    return ch >= "0" && ch <= "9";
+  }
 
-/* ===== 입력 ===== */
-function render(){
-  document.getElementById('expr').innerText =
-    expr.slice(0,cursor)+'|'+expr.slice(cursor);
-}
-function input(v){expr=expr.slice(0,cursor)+v+expr.slice(cursor);cursor+=v.length;render()}
-function inputOp(o){input(` ${o} `)}
-function inputFunc(f){f==='sqrt'?input('√('):input(f+'(')}
-function move(d){cursor=Math.max(0,Math.min(expr.length,cursor+d));render()}
-function backspace(){if(cursor>0){expr=expr.slice(0,cursor-1)+expr.slice(cursor);cursor--;render()}}
-function clearAll(){expr='';cursor=0;render();result.innerText=''}
-function openRootPopup(){rootPopup.style.display='block'}
-function closeRootPopup(){rootPopup.style.display='none'}
-function confirmRoot(){input(`${toSup(rootN.value)}√(`);closeRootPopup()}
+  function parseNumberLiteralMeta(raw) {
+    const text = raw.trim().toLowerCase();
+    const m = text.match(/^([+-]?)(\d+(?:\.\d*)?|\.\d+)(?:e([+-]?\d+))?$/);
+    if (!m) {
+      throw new Error("잘못된 숫자 형식: " + raw);
+    }
+    const mantissa = m[2];
+    const exp = m[3] ? parseInt(m[3], 10) : 0;
+    const hasDot = mantissa.includes(".");
 
-/* ===== 곱셈·나눗셈 ===== */
-function sciMulDiv(v,sig){
- if(v===0) return '0.0×10^0';
- const e=Math.floor(Math.log10(Math.abs(v)));
- return Number(v/10**e).toPrecision(sig)+'×10^'+e;
-}
+    let sig;
+    let place;
 
-/* ===== 덧셈·뺄셈 (지수 정렬) ===== */
-function sciAddSubFixed(raw,terms){
- if(raw===0) return '0.0×10^0';
- const vals=terms.map(t=>Function(
-   'return '+t.replace(/π/g,'Math.PI')
-   .replace(/e/g,'Math.E')
-   .replace(/×/g,'*').replace(/\^/g,'**')
- )());
- const exps=vals.map(v=>Math.floor(Math.log10(Math.abs(v))));
- const base=Math.max(...exps);
- const shifted=vals.map(v=>v/10**base);
- const decs=shifted.map(v=>{
-   const s=v.toString();return s.includes('.')?s.split('.')[1].length:0;
- });
- const minDec=Math.min(...decs);
- return (raw/10**base).toFixed(minDec)+'×10^'+base;
-}
+    if (hasDot) {
+      const digits = mantissa.replace(".", "");
+      const noLead = digits.replace(/^0+/, "");
+      sig = Math.max(1, noLead.length);
+      const decimals = mantissa.length - mantissa.indexOf(".") - 1;
+      place = -decimals;
+    } else {
+      const d = mantissa;
+      const noLead = d.replace(/^0+/, "");
+      if (noLead.length === 0) {
+        sig = 1;
+        place = 0;
+      } else {
+        const trail = (noLead.match(/0+$/) || [""])[0].length;
+        const core = noLead.replace(/0+$/, "");
+        sig = Math.max(1, core.length);
+        place = trail;
+      }
+    }
 
-/* ===== 계산 ===== */
-function calculate(){
- try{
-  const nums=(expr.match(/\d+\.?\d*/g)||[]);
-  const sigs=nums.map(n=>n.replace('.','').replace(/^0+/,'').length);
-  const minSig=Math.min(...sigs);
+    place += exp;
 
-  let safe=expr
-   .replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)√\(([^)]+)\)/g,(_,n,x)=>`Math.pow(${x},1/${fromSup(n)})`)
-   .replace(/√\(/g,'Math.sqrt(')
-   .replace(/sin\(/g,'Math.sin(')
-   .replace(/cos\(/g,'Math.cos(')
-   .replace(/tan\(/g,'Math.tan(')
-   .replace(/log\(/g,'Math.log10(')
-   .replace(/π/g,'Math.PI')
-   .replace(/e/g,'Math.E')
-   .replace(/×/g,'*').replace(/÷/g,'/')
-   .replace(/\^/g,'**')
-   .replace(/−/g,'-');
+    return {
+      kind: "number",
+      raw,
+      value: Number(text),
+      sig,
+      place
+    };
+  }
 
-  const raw=Function(`return ${safe}`)();
-  const out =
-   expr.includes('+')||expr.includes('-')
-    ? sciAddSubFixed(raw,expr.split(/[\+\-]/))
-    : sciMulDiv(raw,minSig);
+  function tokenize(input) {
+    const s = input.replace(/\s+/g, "");
+    const tokens = [];
+    let i = 0;
 
-  result.innerText='= '+out;
- }catch{
-  result.innerText='계산 오류';
- }
-}
-render();
+    while (i < s.length) {
+      const ch = s[i];
+
+      if (ch === "(" || ch === ")" || ch === "+" || ch === "-" || ch === "*" || ch === "/") {
+        tokens.push({ type: "op", value: ch });
+        i += 1;
+        continue;
+      }
+
+      if (s.slice(i, i + 2).toLowerCase() === "pi") {
+        tokens.push({ type: "const", value: Math.PI, name: "pi", sig: Infinity, place: -Infinity });
+        i += 2;
+        continue;
+      }
+
+      if (ch.toLowerCase() === "e") {
+        tokens.push({ type: "const", value: Math.E, name: "e", sig: Infinity, place: -Infinity });
+        i += 1;
+        continue;
+      }
+
+      if (isDigit(ch) || ch === ".") {
+        const start = i;
+        let hasDot = false;
+        while (i < s.length && (isDigit(s[i]) || s[i] === ".")) {
+          if (s[i] === ".") {
+            if (hasDot) break;
+            hasDot = true;
+          }
+          i += 1;
+        }
+
+        if (i < s.length && (s[i] === "e" || s[i] === "E")) {
+          const ePos = i;
+          i += 1;
+          if (i < s.length && (s[i] === "+" || s[i] === "-")) i += 1;
+          const expStart = i;
+          while (i < s.length && isDigit(s[i])) i += 1;
+          if (expStart === i) {
+            i = ePos;
+          }
+        }
+
+        const raw = s.slice(start, i);
+        tokens.push({ type: "num", meta: parseNumberLiteralMeta(raw) });
+        continue;
+      }
+
+      throw new Error("알 수 없는 기호: " + ch);
+    }
+
+    return tokens;
+  }
+
+  function parse(tokens) {
+    let pos = 0;
+
+    function peek() {
+      return tokens[pos];
+    }
+
+    function take(value) {
+      const t = tokens[pos];
+      if (!t || t.value !== value) return false;
+      pos += 1;
+      return true;
+    }
+
+    function parsePrimary() {
+      const t = peek();
+      if (!t) throw new Error("수식이 끝났습니다.");
+
+      if (take("(")) {
+        const n = parseExpression();
+        if (!take(")")) throw new Error("닫는 괄호가 필요합니다.");
+        return n;
+      }
+
+      if (t.type === "num") {
+        pos += 1;
+        return { type: "number", meta: t.meta };
+      }
+
+      if (t.type === "const") {
+        pos += 1;
+        return {
+          type: "const",
+          value: t.value,
+          name: t.name,
+          sig: Infinity,
+          place: -Infinity
+        };
+      }
+
+      if (take("+")) {
+        return { type: "unary", op: "+", arg: parsePrimary() };
+      }
+      if (take("-")) {
+        return { type: "unary", op: "-", arg: parsePrimary() };
+      }
+
+      throw new Error("잘못된 토큰: " + JSON.stringify(t));
+    }
+
+    function parseMulDiv() {
+      let node = parsePrimary();
+      while (true) {
+        if (take("*")) {
+          node = { type: "binary", op: "*", left: node, right: parsePrimary() };
+        } else if (take("/")) {
+          node = { type: "binary", op: "/", left: node, right: parsePrimary() };
+        } else {
+          break;
+        }
+      }
+      return node;
+    }
+
+    function parseExpression() {
+      let node = parseMulDiv();
+      while (true) {
+        if (take("+")) {
+          node = { type: "binary", op: "+", left: node, right: parseMulDiv() };
+        } else if (take("-")) {
+          node = { type: "binary", op: "-", left: node, right: parseMulDiv() };
+        } else {
+          break;
+        }
+      }
+      return node;
+    }
+
+    const ast = parseExpression();
+    if (pos !== tokens.length) throw new Error("해석하지 못한 토큰이 남았습니다.");
+    return ast;
+  }
+
+  function evalAst(node, leaves) {
+    if (node.type === "number") {
+      leaves.push(node.meta);
+      return node.meta.value;
+    }
+    if (node.type === "const") {
+      leaves.push({ kind: "const", sig: Infinity, place: -Infinity, value: node.value, raw: node.name });
+      return node.value;
+    }
+    if (node.type === "unary") {
+      const v = evalAst(node.arg, leaves);
+      return node.op === "-" ? -v : v;
+    }
+    const a = evalAst(node.left, leaves);
+    const b = evalAst(node.right, leaves);
+    if (node.op === "+") return a + b;
+    if (node.op === "-") return a - b;
+    if (node.op === "*") return a * b;
+    if (node.op === "/") return a / b;
+    throw new Error("지원하지 않는 연산");
+  }
+
+  function roundHalfEven(x) {
+    const sign = x < 0 ? -1 : 1;
+    const a = Math.abs(x);
+    const n = Math.floor(a);
+    const frac = a - n;
+    const eps = 1e-12;
+
+    let r;
+    if (frac > 0.5 + eps) {
+      r = n + 1;
+    } else if (frac < 0.5 - eps) {
+      r = n;
+    } else {
+      r = (n % 2 === 0) ? n : n + 1;
+    }
+    return sign * r;
+  }
+
+  function roundToPlace(value, place) {
+    if (!Number.isFinite(value)) return value;
+    if (value === 0) return 0;
+    const scale = Math.pow(10, -place);
+    const shifted = value * scale;
+    const rounded = roundHalfEven(shifted);
+    return rounded / scale;
+  }
+
+  function roundToSig(value, sig) {
+    if (!Number.isFinite(value)) return value;
+    if (value === 0) return 0;
+    const abs = Math.abs(value);
+    const exp = Math.floor(Math.log10(abs));
+    const place = exp - sig + 1;
+    return roundToPlace(value, place);
+  }
+
+  function formatByPlace(value, place) {
+    if (!Number.isFinite(value)) return String(value);
+    if (place < 0) {
+      return value.toFixed(-place);
+    }
+    const rounded = roundToPlace(value, place);
+    if (place === 0) return String(Math.trunc(rounded));
+    return rounded.toExponential(0).replace("e+", "e");
+  }
+
+  function formatBySig(value, sig) {
+    if (!Number.isFinite(value)) return String(value);
+    if (value === 0) return "0";
+    const abs = Math.abs(value);
+    if (abs >= 1e6 || abs < 1e-3) {
+      return value.toExponential(sig - 1).replace("e+", "e");
+    }
+    return Number(value).toPrecision(sig);
+  }
+
+  function calc() {
+    try {
+      const tokens = tokenize(exprEl.value);
+      const ast = parse(tokens);
+      const leaves = [];
+      const raw = evalAst(ast, leaves);
+
+      let finalText = "";
+      let ruleText = "";
+
+      if (ast.type === "binary" && (ast.op === "+" || ast.op === "-")) {
+        const finitePlaces = leaves.map(v => v.place).filter(v => Number.isFinite(v));
+        if (finitePlaces.length === 0) {
+          finalText = String(raw);
+          ruleText = "덧셈/뺄셈이지만 제한하는 측정값이 없어 일반값 사용";
+        } else {
+          const targetPlace = Math.max.apply(null, finitePlaces);
+          const rounded = roundToPlace(raw, targetPlace);
+          finalText = formatByPlace(rounded, targetPlace);
+          ruleText = "최종 연산이 덧셈/뺄셈: 가장 거친 자리(place)로 반올림";
+        }
+      } else if (ast.type === "binary" && (ast.op === "*" || ast.op === "/")) {
+        const finiteSigs = leaves.map(v => v.sig).filter(v => Number.isFinite(v));
+        if (finiteSigs.length === 0) {
+          finalText = String(raw);
+          ruleText = "곱셈/나눗셈이지만 제한하는 측정값이 없어 일반값 사용";
+        } else {
+          const targetSig = Math.min.apply(null, finiteSigs);
+          const rounded = roundToSig(raw, targetSig);
+          finalText = formatBySig(rounded, targetSig);
+          ruleText = "최종 연산이 곱셈/나눗셈: 최소 유효숫자 개수로 반올림";
+        }
+      } else {
+        finalText = String(raw);
+        ruleText = "최상위가 단일 값/단항식이라 유효숫자 규칙 미적용";
+      }
+
+      resultEl.innerHTML = ""
+        + "<div><strong>일반 계산:</strong> " + raw + "</div>"
+        + "<div><strong>유효숫자 결과:</strong> " + finalText + "</div>"
+        + "<div><strong>적용 규칙:</strong> " + ruleText + "</div>";
+    } catch (err) {
+      resultEl.innerHTML = '<div class="error">오류: ' + err.message + '</div>';
+    }
+  }
+
+  document.getElementById("calcBtn").addEventListener("click", calc);
+  document.getElementById("sample1").addEventListener("click", function () {
+    exprEl.value = "4.14*3.9";
+    calc();
+  });
+  document.getElementById("sample2").addEventListener("click", function () {
+    exprEl.value = "5.8+6.24";
+    calc();
+  });
+  document.getElementById("sample3").addEventListener("click", function () {
+    exprEl.value = "(0.3*5)*1.26";
+    calc();
+  });
+
+  calc();
+})();
 </script>
 </body>
 </html>
