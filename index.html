@@ -126,7 +126,6 @@
   }
   .keys .strong:hover { background: #0f655e; }
   .keys .wide { grid-column: span 2; }
-  .keys .tall { grid-row: span 2; }
   .result-box {
     display: grid;
     gap: 8px;
@@ -194,21 +193,21 @@
         <div class="keys" id="keys">
           <button data-act="clear">C</button>
           <button data-act="back">DEL</button>
+          <button data-act="move" data-val="-1">←</button>
+          <button data-act="move" data-val="1">→</button>
           <button data-act="insert" data-val="(">(</button>
           <button data-act="insert" data-val=")">)</button>
+
           <button data-act="insert" data-val="[">[</button>
           <button data-act="insert" data-val="]">]</button>
-
           <button data-act="func" data-val="sin">sin</button>
           <button data-act="func" data-val="cos">cos</button>
           <button data-act="func" data-val="tan">tan</button>
-          <button data-act="func" data-val="asin">asin</button>
-          <button data-act="func" data-val="acos">acos</button>
-          <button data-act="func" data-val="atan">atan</button>
+          <button data-act="func" data-val="sqrt">√</button>
 
+          <button data-act="nroot">n√</button>
           <button data-act="func" data-val="log">log</button>
           <button data-act="func" data-val="ln">ln</button>
-          <button data-act="func" data-val="sqrt">sqrt</button>
           <button data-act="func" data-val="abs">abs</button>
           <button data-act="insert" data-val="^" class="op">^</button>
           <button data-act="insert" data-val="/" class="op">/</button>
@@ -217,7 +216,7 @@
           <button data-act="insert" data-val="8">8</button>
           <button data-act="insert" data-val="9">9</button>
           <button data-act="insert" data-val="*" class="op">*</button>
-          <button data-act="insert" data-val="pi">pi</button>
+          <button data-act="insert" data-val="pi">π</button>
           <button data-act="insert" data-val="e">e</button>
 
           <button data-act="insert" data-val="4">4</button>
@@ -225,7 +224,7 @@
           <button data-act="insert" data-val="6">6</button>
           <button data-act="insert" data-val="-" class="op">-</button>
           <button data-act="insert" data-val="1.0e">x10^</button>
-          <button data-act="insert" data-val=",">,</button>
+          <button data-act="func" data-val="sqrt">√( )</button>
 
           <button data-act="insert" data-val="1">1</button>
           <button data-act="insert" data-val="2">2</button>
@@ -244,12 +243,14 @@
           <div class="result"><strong>일반 결과:</strong> -</div>
           <div class="result"><strong>유효숫자 결과:</strong> -</div>
           <div class="result"><strong>과학적 표기:</strong> -</div>
+          <div class="result"><strong>분수 표기:</strong> -</div>
           <div class="result"><strong>적용 규칙:</strong> -</div>
         </div>
         <div class="note">
           <div>대괄호 안 숫자 <code>[...]</code> 는 완전수로 처리합니다.</div>
           <div>최종 연산이 <code>+</code>, <code>-</code>면 자릿수 기준, 그 외는 유효숫자 기준으로 반올림합니다.</div>
           <div>반올림은 5에서 짝수 쪽으로 반올림(half-even) 규칙을 사용합니다.</div>
+          <div><code>n√</code> 버튼은 <code>n</code>을 입력받아 <code>rootN(값)</code> 형태로 삽입합니다.</div>
         </div>
       </div>
     </div>
@@ -265,10 +266,17 @@
   let angleMode = "DEG";
   let lastAnswer = 0;
 
+  function prettyExpr(v, pos) {
+    let s = v;
+    s = s.replace(/pi/g, "π");
+    s = s.replace(/sqrt\(/g, "√(");
+    s = s.replace(/root(\d+)\(/g, (m, n) => n + "√(");
+    return s.slice(0, pos) + "|" + s.slice(pos);
+  }
+
   function syncView() {
     const pos = exprEl.selectionStart || 0;
-    const v = exprEl.value;
-    exprView.textContent = v.slice(0, pos) + "|" + v.slice(pos);
+    exprView.textContent = prettyExpr(exprEl.value, pos);
   }
 
   exprEl.addEventListener("keyup", syncView);
@@ -281,6 +289,14 @@
     const v = exprEl.value;
     exprEl.value = v.slice(0, start) + text + v.slice(end);
     const newPos = start + text.length;
+    exprEl.setSelectionRange(newPos, newPos);
+    exprEl.focus();
+    syncView();
+  }
+
+  function moveCursor(dir) {
+    const pos = exprEl.selectionStart || 0;
+    const newPos = Math.max(0, Math.min(exprEl.value.length, pos + dir));
     exprEl.setSelectionRange(newPos, newPos);
     exprEl.focus();
     syncView();
@@ -319,18 +335,25 @@
     const act = btn.dataset.act;
     const val = btn.dataset.val;
     if (act === "insert") {
-      if (val === "Ans") {
-        insertAtCursor(String(lastAnswer));
-      } else {
-        insertAtCursor(val);
-      }
+      if (val === "Ans") insertAtCursor(String(lastAnswer));
+      else insertAtCursor(val);
     } else if (act === "func") {
       insertAtCursor(val + "(");
+    } else if (act === "nroot") {
+      const n = prompt("루트 지수 n(정수)을 입력하세요:", "2");
+      if (!n) return;
+      if (!/^\d+$/.test(n) || Number(n) <= 0) {
+        alert("양의 정수를 입력하세요.");
+        return;
+      }
+      insertAtCursor("root" + n + "(");
     } else if (act === "back") {
       backspace();
     } else if (act === "clear") {
       exprEl.value = "";
       syncView();
+    } else if (act === "move") {
+      moveCursor(parseInt(val, 10));
     } else if (act === "calc") {
       calc();
     }
@@ -379,7 +402,7 @@
     return { kind: "number", raw, value: Number(text), sig, place, exact: false };
   }
 
-  const FUNCTIONS = new Set(["sin","cos","tan","asin","acos","atan","log","ln","sqrt","abs","exp"]);
+  const FUNCTIONS = new Set(["sin","cos","tan","log","ln","sqrt","abs","exp"]);
 
   function tokenize(input) {
     const s = input.replace(/\s+/g, "");
@@ -404,6 +427,19 @@
         const meta = parseNumberLiteralMeta(inner, true);
         tokens.push({ type: "num", meta });
         i = j + 1;
+        continue;
+      }
+
+      if (s.slice(i, i + 4).toLowerCase() === "root") {
+        let j = i + 4;
+        let digits = "";
+        while (j < s.length && isDigit(s[j])) {
+          digits += s[j];
+          j += 1;
+        }
+        if (digits.length === 0) throw new Error("root 뒤에 지수 n이 필요합니다.");
+        tokens.push({ type: "func", name: "root", n: parseInt(digits, 10) });
+        i = j;
         continue;
       }
 
@@ -496,12 +532,6 @@
       pos += 1;
       return true;
     }
-    function takeType(type) {
-      const t = tokens[pos];
-      if (!t || t.type !== type) return null;
-      pos += 1;
-      return t;
-    }
 
     function parsePrimary() {
       const t = peek();
@@ -526,7 +556,7 @@
         if (!takeOp("(")) throw new Error(t.name + " 함수는 괄호가 필요합니다.");
         const arg = parseExpression();
         if (!takeOp(")")) throw new Error("닫는 괄호가 필요합니다.");
-        return { type: "func", name: t.name, arg };
+        return { type: "func", name: t.name, arg, n: t.n };
       }
 
       throw new Error("잘못된 토큰: " + JSON.stringify(t));
@@ -571,12 +601,8 @@
     return ast;
   }
 
-  function toRad(x) {
-    return angleMode === "DEG" ? (x * Math.PI / 180) : x;
-  }
-  function fromRad(x) {
-    return angleMode === "DEG" ? (x * 180 / Math.PI) : x;
-  }
+  function toRad(x) { return angleMode === "DEG" ? (x * Math.PI / 180) : x; }
+  function fromRad(x) { return angleMode === "DEG" ? (x * 180 / Math.PI) : x; }
 
   function evalAst(node, leaves) {
     if (node.type === "number") {
@@ -597,14 +623,12 @@
         case "sin": return Math.sin(toRad(v));
         case "cos": return Math.cos(toRad(v));
         case "tan": return Math.tan(toRad(v));
-        case "asin": return fromRad(Math.asin(v));
-        case "acos": return fromRad(Math.acos(v));
-        case "atan": return fromRad(Math.atan(v));
         case "log": return Math.log10(v);
         case "ln": return Math.log(v);
         case "sqrt": return Math.sqrt(v);
         case "abs": return Math.abs(v);
         case "exp": return Math.exp(v);
+        case "root": return Math.pow(v, 1 / node.n);
         default: throw new Error("지원하지 않는 함수: " + node.name);
       }
     }
@@ -679,6 +703,33 @@
     return Number(value).toExponential(sig - 1).replace("e+", "e");
   }
 
+  function toFraction(x, maxDen = 1000, tol = 1e-10) {
+    if (!Number.isFinite(x)) return null;
+    if (x === 0) return { n: 0, d: 1 };
+    const sign = x < 0 ? -1 : 1;
+    let value = Math.abs(x);
+    let h1 = 1, h2 = 0, k1 = 0, k2 = 1;
+    let b = value;
+    for (let i = 0; i < 32; i += 1) {
+      const a = Math.floor(b);
+      const h = a * h1 + h2;
+      const k = a * k1 + k2;
+      if (k > maxDen) break;
+      const approx = h / k;
+      if (Math.abs(approx - value) < tol) {
+        return { n: sign * h, d: k };
+      }
+      h2 = h1; h1 = h;
+      k2 = k1; k1 = k;
+      const frac = b - a;
+      if (frac === 0) break;
+      b = 1 / frac;
+    }
+    const approx = h1 / k1;
+    if (Math.abs(approx - value) < tol) return { n: sign * h1, d: k1 };
+    return null;
+  }
+
   function calc() {
     try {
       const tokens = tokenize(exprEl.value);
@@ -718,11 +769,14 @@
       }
 
       const rawText = Number.isFinite(raw) ? String(raw) : String(raw);
+      const frac = toFraction(raw);
+      const fracText = frac ? (frac.d === 1 ? String(frac.n) : (frac.n + "/" + frac.d)) : "-";
 
       resultBox.innerHTML = ""
         + "<div class=\"result\"><strong>일반 결과:</strong> " + rawText + "</div>"
         + "<div class=\"result\"><strong>유효숫자 결과:</strong> " + sigText + "</div>"
         + "<div class=\"result\"><strong>과학적 표기:</strong> " + sciText + "</div>"
+        + "<div class=\"result\"><strong>분수 표기:</strong> " + fracText + "</div>"
         + "<div class=\"result\"><strong>적용 규칙:</strong> " + ruleText + "</div>";
     } catch (err) {
       resultBox.innerHTML = "<div class=\"result error\">오류: " + err.message + "</div>";
