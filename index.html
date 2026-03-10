@@ -6,121 +6,347 @@
 <title>유효숫자 계산기</title>
 <style>
   :root {
-    --bg: #f5f7fb;
+    --bg1: #f6f7ff;
+    --bg2: #eef7f4;
     --card: #ffffff;
-    --text: #1f2937;
-    --muted: #6b7280;
-    --line: #d1d5db;
-    --primary: #0f766e;
-    --primary-2: #115e59;
-    --error: #b91c1c;
+    --text: #0f172a;
+    --muted: #5b6475;
+    --line: #d6dde6;
+    --accent: #0e7490;
+    --accent-2: #155e75;
+    --accent-3: #e2f3f0;
+    --key: #f5f7fb;
+    --key-strong: #0f766e;
+    --danger: #b91c1c;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 40%);
+    font-family: "NanumSquare", "Noto Sans KR", "Malgun Gothic", sans-serif;
     color: var(--text);
+    background:
+      radial-gradient(900px 420px at 10% -10%, #dff6ff 0%, transparent 60%),
+      radial-gradient(900px 420px at 90% -10%, #dff7e5 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+    min-height: 100vh;
   }
   .wrap {
-    max-width: 880px;
-    margin: 32px auto;
+    max-width: 980px;
+    margin: 28px auto 40px;
     padding: 0 16px;
+  }
+  .title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .title h1 {
+    margin: 0;
+    font-size: 28px;
+    letter-spacing: -0.2px;
+  }
+  .title span { color: var(--muted); }
+  .grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 16px;
   }
   .card {
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   }
-  h1 { margin: 0 0 12px; font-size: 26px; }
-  p { margin: 0; color: var(--muted); line-height: 1.5; }
-  .input-row { margin-top: 16px; display: grid; gap: 10px; }
-  input {
-    width: 100%;
-    font-size: 17px;
+  .display {
+    background: #0b1324;
+    color: #e2e8f0;
+    border-radius: 12px;
     padding: 12px;
+    margin-bottom: 14px;
+    font-family: "Consolas", "JetBrains Mono", monospace;
+  }
+  .expr {
+    font-size: 18px;
+    min-height: 28px;
+    word-break: break-all;
+  }
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 18px;
+    background: #67e8f9;
+    vertical-align: baseline;
+    animation: blink 1s steps(2, start) infinite;
+    margin-left: 1px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 8px 0 14px;
+  }
+  .input-row input {
+    flex: 1;
+    font-size: 16px;
+    padding: 10px 12px;
     border: 1px solid var(--line);
     border-radius: 10px;
   }
-  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  button {
-    border: 0;
-    background: var(--primary);
+  .input-row button {
+    background: var(--accent);
     color: #fff;
-    font-size: 15px;
-    padding: 10px 14px;
+    border: 0;
     border-radius: 10px;
+    padding: 10px 12px;
     cursor: pointer;
   }
-  button:hover { background: var(--primary-2); }
-  button.secondary {
-    background: #e5e7eb;
-    color: #111827;
+  .input-row button:hover { background: var(--accent-2); }
+  .keys {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .keys button {
+    border: 1px solid var(--line);
+    background: var(--key);
+    padding: 10px 8px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .keys button:hover { background: #e9eef6; }
+  .keys .op { background: #f0f9ff; }
+  .keys .strong {
+    background: var(--key-strong);
+    color: #fff;
+    border-color: var(--key-strong);
+  }
+  .keys .strong:hover { background: #0f655e; }
+  .keys .wide { grid-column: span 2; }
+  .keys .tall { grid-row: span 2; }
+  .result-box {
+    display: grid;
+    gap: 8px;
   }
   .result {
-    margin-top: 16px;
-    border: 1px dashed var(--line);
+    background: var(--accent-3);
+    border: 1px solid #cce8e2;
+    padding: 10px 12px;
     border-radius: 10px;
-    padding: 12px;
-    background: #f9fafb;
   }
-  .result strong { display: inline-block; min-width: 90px; }
-  .error { color: var(--error); font-weight: 600; }
-  ul { margin: 10px 0 0 18px; color: var(--muted); }
-  code { background: #eef2f7; padding: 1px 4px; border-radius: 4px; }
+  .result strong { display: inline-block; width: 140px; }
+  .mode {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .mode button {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .mode button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .note {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+  .error { color: var(--danger); font-weight: 700; }
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
+    <div class="title">
       <h1>유효숫자 계산기</h1>
-      <p>
-        블로그 규칙을 반영했습니다. 중간 단계는 일반 계산 후,
-        최종 단계에서만 유효숫자/자릿수 반올림을 적용합니다.
-      </p>
+      <span>공학용 버튼 + 유효숫자 결과 3종 출력</span>
+    </div>
 
-      <div class="input-row">
-        <input id="expr" type="text" value="(3.022+1.50)*2601/4.7" />
-        <div class="actions">
-          <button id="calcBtn">계산하기</button>
-          <button class="secondary" id="sample1">예시1</button>
-          <button class="secondary" id="sample2">예시2</button>
-          <button class="secondary" id="sample3">예시3</button>
+    <div class="grid">
+      <div class="card">
+        <div class="display">
+          <div class="expr" id="exprView"></div>
+        </div>
+
+        <div class="input-row">
+          <input id="expr" type="text" placeholder="예: (3.022+1.50)*2601/4.7" />
+          <button id="calcBtn">=</button>
+        </div>
+
+        <div class="mode">
+          <button id="degBtn" class="active">DEG</button>
+          <button id="radBtn">RAD</button>
+        </div>
+
+        <div class="keys" id="keys">
+          <button data-act="clear">C</button>
+          <button data-act="back">DEL</button>
+          <button data-act="insert" data-val="(">(</button>
+          <button data-act="insert" data-val=")">)</button>
+          <button data-act="insert" data-val="[">[</button>
+          <button data-act="insert" data-val="]">]</button>
+
+          <button data-act="func" data-val="sin">sin</button>
+          <button data-act="func" data-val="cos">cos</button>
+          <button data-act="func" data-val="tan">tan</button>
+          <button data-act="func" data-val="asin">asin</button>
+          <button data-act="func" data-val="acos">acos</button>
+          <button data-act="func" data-val="atan">atan</button>
+
+          <button data-act="func" data-val="log">log</button>
+          <button data-act="func" data-val="ln">ln</button>
+          <button data-act="func" data-val="sqrt">sqrt</button>
+          <button data-act="func" data-val="abs">abs</button>
+          <button data-act="insert" data-val="^" class="op">^</button>
+          <button data-act="insert" data-val="/" class="op">/</button>
+
+          <button data-act="insert" data-val="7">7</button>
+          <button data-act="insert" data-val="8">8</button>
+          <button data-act="insert" data-val="9">9</button>
+          <button data-act="insert" data-val="*" class="op">*</button>
+          <button data-act="insert" data-val="pi">pi</button>
+          <button data-act="insert" data-val="e">e</button>
+
+          <button data-act="insert" data-val="4">4</button>
+          <button data-act="insert" data-val="5">5</button>
+          <button data-act="insert" data-val="6">6</button>
+          <button data-act="insert" data-val="-" class="op">-</button>
+          <button data-act="insert" data-val="1.0e">x10^</button>
+          <button data-act="insert" data-val=",">,</button>
+
+          <button data-act="insert" data-val="1">1</button>
+          <button data-act="insert" data-val="2">2</button>
+          <button data-act="insert" data-val="3">3</button>
+          <button data-act="insert" data-val="+" class="op">+</button>
+          <button data-act="insert" data-val=".">.</button>
+          <button data-act="insert" data-val="0">0</button>
+
+          <button data-act="insert" data-val="Ans" class="wide">Ans</button>
+          <button data-act="calc" class="strong wide">계산</button>
         </div>
       </div>
 
-      <div class="result" id="result">
-        <div><strong>일반 계산:</strong> -</div>
-        <div><strong>유효숫자 결과:</strong> -</div>
-        <div><strong>적용 규칙:</strong> -</div>
+      <div class="card">
+        <div class="result-box" id="resultBox">
+          <div class="result"><strong>일반 결과:</strong> -</div>
+          <div class="result"><strong>유효숫자 결과:</strong> -</div>
+          <div class="result"><strong>과학적 표기:</strong> -</div>
+          <div class="result"><strong>적용 규칙:</strong> -</div>
+        </div>
+        <div class="note">
+          <div>대괄호 안 숫자 <code>[...]</code> 는 완전수로 처리합니다.</div>
+          <div>최종 연산이 <code>+</code>, <code>-</code>면 자릿수 기준, 그 외는 유효숫자 기준으로 반올림합니다.</div>
+          <div>반올림은 5에서 짝수 쪽으로 반올림(half-even) 규칙을 사용합니다.</div>
+        </div>
       </div>
-
-      <ul>
-        <li>지원 연산: <code>+ - * / ( )</code></li>
-        <li>상수: <code>pi</code>, <code>e</code> (완전수로 간주, 제한 없음)</li>
-        <li>지수 표기: <code>1.20e3</code> 가능</li>
-        <li>반올림: 5는 짝수 쪽 반올림(half-even)</li>
-      </ul>
     </div>
   </div>
 
 <script>
 (function () {
   const exprEl = document.getElementById("expr");
-  const resultEl = document.getElementById("result");
+  const exprView = document.getElementById("exprView");
+  const resultBox = document.getElementById("resultBox");
+  const degBtn = document.getElementById("degBtn");
+  const radBtn = document.getElementById("radBtn");
+  let angleMode = "DEG";
+  let lastAnswer = 0;
 
-  function isDigit(ch) {
-    return ch >= "0" && ch <= "9";
+  function syncView() {
+    const pos = exprEl.selectionStart || 0;
+    const v = exprEl.value;
+    exprView.textContent = v.slice(0, pos) + "|" + v.slice(pos);
   }
 
-  function parseNumberLiteralMeta(raw) {
+  exprEl.addEventListener("keyup", syncView);
+  exprEl.addEventListener("click", syncView);
+  exprEl.addEventListener("input", syncView);
+
+  function insertAtCursor(text) {
+    const start = exprEl.selectionStart || 0;
+    const end = exprEl.selectionEnd || 0;
+    const v = exprEl.value;
+    exprEl.value = v.slice(0, start) + text + v.slice(end);
+    const newPos = start + text.length;
+    exprEl.setSelectionRange(newPos, newPos);
+    exprEl.focus();
+    syncView();
+  }
+
+  function backspace() {
+    const start = exprEl.selectionStart || 0;
+    const end = exprEl.selectionEnd || 0;
+    if (start !== end) {
+      insertAtCursor("");
+      return;
+    }
+    if (start === 0) return;
+    const v = exprEl.value;
+    exprEl.value = v.slice(0, start - 1) + v.slice(end);
+    const newPos = start - 1;
+    exprEl.setSelectionRange(newPos, newPos);
+    exprEl.focus();
+    syncView();
+  }
+
+  function setMode(mode) {
+    angleMode = mode;
+    degBtn.classList.toggle("active", mode === "DEG");
+    radBtn.classList.toggle("active", mode === "RAD");
+  }
+
+  degBtn.addEventListener("click", () => setMode("DEG"));
+  radBtn.addEventListener("click", () => setMode("RAD"));
+
+  document.getElementById("calcBtn").addEventListener("click", calc);
+
+  document.getElementById("keys").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    const val = btn.dataset.val;
+    if (act === "insert") {
+      if (val === "Ans") {
+        insertAtCursor(String(lastAnswer));
+      } else {
+        insertAtCursor(val);
+      }
+    } else if (act === "func") {
+      insertAtCursor(val + "(");
+    } else if (act === "back") {
+      backspace();
+    } else if (act === "clear") {
+      exprEl.value = "";
+      syncView();
+    } else if (act === "calc") {
+      calc();
+    }
+  });
+
+  function isDigit(ch) { return ch >= "0" && ch <= "9"; }
+
+  function parseNumberLiteralMeta(raw, exact) {
     const text = raw.trim().toLowerCase();
     const m = text.match(/^([+-]?)(\d+(?:\.\d*)?|\.\d+)(?:e([+-]?\d+))?$/);
-    if (!m) {
-      throw new Error("잘못된 숫자 형식: " + raw);
+    if (!m) throw new Error("잘못된 숫자 형식: " + raw);
+
+    if (exact) {
+      return { kind: "number", raw, value: Number(text), sig: Infinity, place: -Infinity, exact: true };
     }
+
     const mantissa = m[2];
     const exp = m[3] ? parseInt(m[3], 10) : 0;
     const hasDot = mantissa.includes(".");
@@ -150,14 +376,10 @@
 
     place += exp;
 
-    return {
-      kind: "number",
-      raw,
-      value: Number(text),
-      sig,
-      place
-    };
+    return { kind: "number", raw, value: Number(text), sig, place, exact: false };
   }
+
+  const FUNCTIONS = new Set(["sin","cos","tan","asin","acos","atan","log","ln","sqrt","abs","exp"]);
 
   function tokenize(input) {
     const s = input.replace(/\s+/g, "");
@@ -167,9 +389,21 @@
     while (i < s.length) {
       const ch = s[i];
 
-      if (ch === "(" || ch === ")" || ch === "+" || ch === "-" || ch === "*" || ch === "/") {
+      if (ch === "(" || ch === ")" || ch === "+" || ch === "-" || ch === "*" || ch === "/" || ch === "^") {
         tokens.push({ type: "op", value: ch });
         i += 1;
+        continue;
+      }
+
+      if (ch === "[") {
+        const start = i + 1;
+        let j = start;
+        while (j < s.length && s[j] !== "]") j += 1;
+        if (j >= s.length) throw new Error("대괄호 닫힘(])이 필요합니다.");
+        const inner = s.slice(start, j);
+        const meta = parseNumberLiteralMeta(inner, true);
+        tokens.push({ type: "num", meta });
+        i = j + 1;
         continue;
       }
 
@@ -185,6 +419,19 @@
         continue;
       }
 
+      let matchedFunc = null;
+      for (const fn of FUNCTIONS) {
+        if (s.slice(i, i + fn.length).toLowerCase() === fn) {
+          matchedFunc = fn;
+          break;
+        }
+      }
+      if (matchedFunc) {
+        tokens.push({ type: "func", name: matchedFunc });
+        i += matchedFunc.length;
+        continue;
+      }
+
       if (isDigit(ch) || ch === ".") {
         const start = i;
         let hasDot = false;
@@ -195,50 +442,74 @@
           }
           i += 1;
         }
-
         if (i < s.length && (s[i] === "e" || s[i] === "E")) {
           const ePos = i;
           i += 1;
           if (i < s.length && (s[i] === "+" || s[i] === "-")) i += 1;
           const expStart = i;
           while (i < s.length && isDigit(s[i])) i += 1;
-          if (expStart === i) {
-            i = ePos;
-          }
+          if (expStart === i) i = ePos;
         }
-
         const raw = s.slice(start, i);
-        tokens.push({ type: "num", meta: parseNumberLiteralMeta(raw) });
+        tokens.push({ type: "num", meta: parseNumberLiteralMeta(raw, false) });
         continue;
       }
 
       throw new Error("알 수 없는 기호: " + ch);
     }
 
-    return tokens;
+    return addImplicitMultiplication(tokens);
+  }
+
+  function addImplicitMultiplication(tokens) {
+    const out = [];
+    function isValue(t) {
+      return t.type === "num" || t.type === "const" || t.type === "rparen";
+    }
+    function isLead(t) {
+      return t.type === "num" || t.type === "const" || t.type === "lparen" || t.type === "func";
+    }
+    for (let i = 0; i < tokens.length; i += 1) {
+      const t = tokens[i];
+      if (t.type === "op" && t.value === "(") t.type = "lparen";
+      if (t.type === "op" && t.value === ")") t.type = "rparen";
+      out.push(t);
+      const next = tokens[i + 1];
+      if (!next) continue;
+      const a = t.type === "op" ? t.value : t.type;
+      const b = next.type === "op" ? next.value : next.type;
+      const left = (a === ")" || isValue(t));
+      const right = (b === "(" || isLead(next));
+      if (left && right) {
+        out.push({ type: "op", value: "*" });
+      }
+    }
+    return out;
   }
 
   function parse(tokens) {
     let pos = 0;
-
-    function peek() {
-      return tokens[pos];
-    }
-
-    function take(value) {
+    function peek() { return tokens[pos]; }
+    function takeOp(value) {
       const t = tokens[pos];
-      if (!t || t.value !== value) return false;
+      if (!t || t.type !== "op" || t.value !== value) return false;
       pos += 1;
       return true;
+    }
+    function takeType(type) {
+      const t = tokens[pos];
+      if (!t || t.type !== type) return null;
+      pos += 1;
+      return t;
     }
 
     function parsePrimary() {
       const t = peek();
       if (!t) throw new Error("수식이 끝났습니다.");
 
-      if (take("(")) {
+      if (takeOp("(")) {
         const n = parseExpression();
-        if (!take(")")) throw new Error("닫는 괄호가 필요합니다.");
+        if (!takeOp(")")) throw new Error("닫는 괄호가 필요합니다.");
         return n;
       }
 
@@ -246,38 +517,41 @@
         pos += 1;
         return { type: "number", meta: t.meta };
       }
-
       if (t.type === "const") {
         pos += 1;
-        return {
-          type: "const",
-          value: t.value,
-          name: t.name,
-          sig: Infinity,
-          place: -Infinity
-        };
+        return { type: "const", value: t.value, name: t.name, sig: t.sig, place: t.place };
       }
-
-      if (take("+")) {
-        return { type: "unary", op: "+", arg: parsePrimary() };
-      }
-      if (take("-")) {
-        return { type: "unary", op: "-", arg: parsePrimary() };
+      if (t.type === "func") {
+        pos += 1;
+        if (!takeOp("(")) throw new Error(t.name + " 함수는 괄호가 필요합니다.");
+        const arg = parseExpression();
+        if (!takeOp(")")) throw new Error("닫는 괄호가 필요합니다.");
+        return { type: "func", name: t.name, arg };
       }
 
       throw new Error("잘못된 토큰: " + JSON.stringify(t));
     }
 
+    function parseUnary() {
+      if (takeOp("+")) return { type: "unary", op: "+", arg: parseUnary() };
+      if (takeOp("-")) return { type: "unary", op: "-", arg: parseUnary() };
+      return parsePrimary();
+    }
+
+    function parsePow() {
+      let node = parseUnary();
+      if (takeOp("^")) {
+        node = { type: "binary", op: "^", left: node, right: parsePow() };
+      }
+      return node;
+    }
+
     function parseMulDiv() {
-      let node = parsePrimary();
+      let node = parsePow();
       while (true) {
-        if (take("*")) {
-          node = { type: "binary", op: "*", left: node, right: parsePrimary() };
-        } else if (take("/")) {
-          node = { type: "binary", op: "/", left: node, right: parsePrimary() };
-        } else {
-          break;
-        }
+        if (takeOp("*")) node = { type: "binary", op: "*", left: node, right: parsePow() };
+        else if (takeOp("/")) node = { type: "binary", op: "/", left: node, right: parsePow() };
+        else break;
       }
       return node;
     }
@@ -285,13 +559,9 @@
     function parseExpression() {
       let node = parseMulDiv();
       while (true) {
-        if (take("+")) {
-          node = { type: "binary", op: "+", left: node, right: parseMulDiv() };
-        } else if (take("-")) {
-          node = { type: "binary", op: "-", left: node, right: parseMulDiv() };
-        } else {
-          break;
-        }
+        if (takeOp("+")) node = { type: "binary", op: "+", left: node, right: parseMulDiv() };
+        else if (takeOp("-")) node = { type: "binary", op: "-", left: node, right: parseMulDiv() };
+        else break;
       }
       return node;
     }
@@ -299,6 +569,13 @@
     const ast = parseExpression();
     if (pos !== tokens.length) throw new Error("해석하지 못한 토큰이 남았습니다.");
     return ast;
+  }
+
+  function toRad(x) {
+    return angleMode === "DEG" ? (x * Math.PI / 180) : x;
+  }
+  function fromRad(x) {
+    return angleMode === "DEG" ? (x * 180 / Math.PI) : x;
   }
 
   function evalAst(node, leaves) {
@@ -314,12 +591,30 @@
       const v = evalAst(node.arg, leaves);
       return node.op === "-" ? -v : v;
     }
+    if (node.type === "func") {
+      const v = evalAst(node.arg, leaves);
+      switch (node.name) {
+        case "sin": return Math.sin(toRad(v));
+        case "cos": return Math.cos(toRad(v));
+        case "tan": return Math.tan(toRad(v));
+        case "asin": return fromRad(Math.asin(v));
+        case "acos": return fromRad(Math.acos(v));
+        case "atan": return fromRad(Math.atan(v));
+        case "log": return Math.log10(v);
+        case "ln": return Math.log(v);
+        case "sqrt": return Math.sqrt(v);
+        case "abs": return Math.abs(v);
+        case "exp": return Math.exp(v);
+        default: throw new Error("지원하지 않는 함수: " + node.name);
+      }
+    }
     const a = evalAst(node.left, leaves);
     const b = evalAst(node.right, leaves);
     if (node.op === "+") return a + b;
     if (node.op === "-") return a - b;
     if (node.op === "*") return a * b;
     if (node.op === "/") return a / b;
+    if (node.op === "^") return Math.pow(a, b);
     throw new Error("지원하지 않는 연산");
   }
 
@@ -329,15 +624,10 @@
     const n = Math.floor(a);
     const frac = a - n;
     const eps = 1e-12;
-
     let r;
-    if (frac > 0.5 + eps) {
-      r = n + 1;
-    } else if (frac < 0.5 - eps) {
-      r = n;
-    } else {
-      r = (n % 2 === 0) ? n : n + 1;
-    }
+    if (frac > 0.5 + eps) r = n + 1;
+    else if (frac < 0.5 - eps) r = n;
+    else r = (n % 2 === 0) ? n : n + 1;
     return sign * r;
   }
 
@@ -361,9 +651,7 @@
 
   function formatByPlace(value, place) {
     if (!Number.isFinite(value)) return String(value);
-    if (place < 0) {
-      return value.toFixed(-place);
-    }
+    if (place < 0) return value.toFixed(-place);
     const rounded = roundToPlace(value, place);
     if (place === 0) return String(Math.trunc(rounded));
     return rounded.toExponential(0).replace("e+", "e");
@@ -379,67 +667,69 @@
     return Number(value).toPrecision(sig);
   }
 
+  function sigFromPlace(value, place) {
+    if (!Number.isFinite(value) || value === 0) return 1;
+    const exp = Math.floor(Math.log10(Math.abs(value)));
+    return exp - place + 1;
+  }
+
+  function toScientific(value, sig) {
+    if (!Number.isFinite(value)) return String(value);
+    if (value === 0) return "0";
+    return Number(value).toExponential(sig - 1).replace("e+", "e");
+  }
+
   function calc() {
     try {
       const tokens = tokenize(exprEl.value);
       const ast = parse(tokens);
       const leaves = [];
       const raw = evalAst(ast, leaves);
+      lastAnswer = raw;
 
-      let finalText = "";
+      let rounded = raw;
       let ruleText = "";
+      let sigText = "";
+      let sciText = "";
 
-      if (ast.type === "binary" && (ast.op === "+" || ast.op === "-")) {
+      const hasFinite = leaves.some(v => Number.isFinite(v.sig) || Number.isFinite(v.place));
+      const topIsAddSub = ast.type === "binary" && (ast.op === "+" || ast.op === "-");
+
+      if (!hasFinite) {
+        rounded = raw;
+        sigText = String(raw);
+        sciText = String(raw);
+        ruleText = "모든 값이 완전수라 유효숫자 제한 없음";
+      } else if (topIsAddSub) {
         const finitePlaces = leaves.map(v => v.place).filter(v => Number.isFinite(v));
-        if (finitePlaces.length === 0) {
-          finalText = String(raw);
-          ruleText = "덧셈/뺄셈이지만 제한하는 측정값이 없어 일반값 사용";
-        } else {
-          const targetPlace = Math.max.apply(null, finitePlaces);
-          const rounded = roundToPlace(raw, targetPlace);
-          finalText = formatByPlace(rounded, targetPlace);
-          ruleText = "최종 연산이 덧셈/뺄셈: 가장 거친 자리(place)로 반올림";
-        }
-      } else if (ast.type === "binary" && (ast.op === "*" || ast.op === "/")) {
-        const finiteSigs = leaves.map(v => v.sig).filter(v => Number.isFinite(v));
-        if (finiteSigs.length === 0) {
-          finalText = String(raw);
-          ruleText = "곱셈/나눗셈이지만 제한하는 측정값이 없어 일반값 사용";
-        } else {
-          const targetSig = Math.min.apply(null, finiteSigs);
-          const rounded = roundToSig(raw, targetSig);
-          finalText = formatBySig(rounded, targetSig);
-          ruleText = "최종 연산이 곱셈/나눗셈: 최소 유효숫자 개수로 반올림";
-        }
+        const targetPlace = Math.max.apply(null, finitePlaces);
+        rounded = roundToPlace(raw, targetPlace);
+        sigText = formatByPlace(rounded, targetPlace);
+        const sig = sigFromPlace(rounded, targetPlace);
+        sciText = toScientific(rounded, sig);
+        ruleText = "최종 연산이 덧셈/뺄셈: 가장 거친 자리(place)로 반올림";
       } else {
-        finalText = String(raw);
-        ruleText = "최상위가 단일 값/단항식이라 유효숫자 규칙 미적용";
+        const finiteSigs = leaves.map(v => v.sig).filter(v => Number.isFinite(v));
+        const targetSig = Math.min.apply(null, finiteSigs);
+        rounded = roundToSig(raw, targetSig);
+        sigText = formatBySig(rounded, targetSig);
+        sciText = toScientific(rounded, targetSig);
+        ruleText = "최종 연산이 곱셈/나눗셈 또는 기타: 최소 유효숫자 개수로 반올림";
       }
 
-      resultEl.innerHTML = ""
-        + "<div><strong>일반 계산:</strong> " + raw + "</div>"
-        + "<div><strong>유효숫자 결과:</strong> " + finalText + "</div>"
-        + "<div><strong>적용 규칙:</strong> " + ruleText + "</div>";
+      const rawText = Number.isFinite(raw) ? String(raw) : String(raw);
+
+      resultBox.innerHTML = ""
+        + "<div class=\"result\"><strong>일반 결과:</strong> " + rawText + "</div>"
+        + "<div class=\"result\"><strong>유효숫자 결과:</strong> " + sigText + "</div>"
+        + "<div class=\"result\"><strong>과학적 표기:</strong> " + sciText + "</div>"
+        + "<div class=\"result\"><strong>적용 규칙:</strong> " + ruleText + "</div>";
     } catch (err) {
-      resultEl.innerHTML = '<div class="error">오류: ' + err.message + '</div>';
+      resultBox.innerHTML = "<div class=\"result error\">오류: " + err.message + "</div>";
     }
   }
 
-  document.getElementById("calcBtn").addEventListener("click", calc);
-  document.getElementById("sample1").addEventListener("click", function () {
-    exprEl.value = "4.14*3.9";
-    calc();
-  });
-  document.getElementById("sample2").addEventListener("click", function () {
-    exprEl.value = "5.8+6.24";
-    calc();
-  });
-  document.getElementById("sample3").addEventListener("click", function () {
-    exprEl.value = "(0.3*5)*1.26";
-    calc();
-  });
-
-  calc();
+  syncView();
 })();
 </script>
 </body>
